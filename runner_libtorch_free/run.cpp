@@ -27,35 +27,10 @@ LICENSE file in the root directory of this source tree.
 #include <iostream>
 #endif
 
-#if defined(__AOTI_MODEL__) || (defined(__ET_MODEL__) && defined(USE_ATENLIB))
-#include <torch/torch.h>
-#endif
-
 #ifdef __AOTI_MODEL__
-#include <torch/csrc/inductor/aoti_package/model_package_loader.h>
-torch::Device aoti_device(torch::kCPU);
-
-#else // __ET_MODEL__
-#include <executorch/extension/module/module.h>
-#include <executorch/extension/tensor/tensor_ptr.h>
-#include <executorch/runtime/core/evalue.h>
-#include <executorch/runtime/core/exec_aten/exec_aten.h>
-#include <executorch/runtime/core/exec_aten/util/scalar_type_util.h>
-
-#if defined(ET_USE_ADAPTIVE_THREADS)
-#include <executorch/extension/threadpool/cpuinfo_utils.h>
-#include <executorch/extension/threadpool/threadpool.h>
-#endif
-
-using exec_aten::ScalarType;
-using executorch::extension::make_tensor_ptr;
-using executorch::extension::TensorPtr;
-using torch::executor::EValue;
-using torch::executor::Module;
-using torch::executor::Result;
-using executorch::runtime::MemoryManager;
-using executorch::runtime::MemoryAllocator;
-using executorch::runtime::Error;
+#include <torch/csrc/inductor/aoti_libtorch_free/device_type.h>
+#include <torch/csrc/inductor/aoti_libtorch_free/package_loader.h>
+aoti::libtorch_free::DeviceType aoti_device;
 #endif
 
 using tokenizers::SPTokenizer;
@@ -108,7 +83,7 @@ typedef struct {
   std::unordered_map<std::string, std::string> metadata;
 
 #ifdef __AOTI_MODEL__
-  torch::inductor::AOTIModelPackageLoader *runner;
+  aoti::libtorch_free::AOTILibtorchFreeLoader *runner;
 #else // __ET_MODEL__
   Module *runner;
 #endif
@@ -147,7 +122,7 @@ void read_checkpoint(char *checkpoint, Config *config) {
 
 void build_transformer(Transformer *t, char *model_path) {
 #ifdef __AOTI_MODEL__
-  t->runner = new torch::inductor::AOTIModelPackageLoader(model_path);
+  t->runner = new aoti::libtorch_free::AOTILibtorchFreeLoader(model_path, "model", true);
 #else //__ET_MODEL__
   t->runner = new Module(
       /* path to PTE model */ model_path,
@@ -196,15 +171,25 @@ float *forward(Transformer *transformer, int token, int pos) {
 #endif
 
 #ifdef __AOTI_MODEL__
-  torch::Tensor token_tensor =
-      torch::from_blob(token_buffer, {1, 1}, torch::kLong);
-  torch::Tensor pos_tensor = torch::from_blob(pos_buffer, {1}, torch::kLong);
-  std::vector<torch::Tensor> inputs{token_tensor.to(aoti_device),
-                                    pos_tensor.to(aoti_device)};
+  aoti::libtorch_free::SlimTensor token_tensor =
+      aoti::libtorch_free::create_tensor_from_blob(
+        token_buffer,
+        {1, 1},
+        {1, 1},
+        aoti::libtorch_free::ScalarType::_int64);
+  aoti::libtorch_free::SlimTensor pos_tensor = 
+    aoti::libtorch_free::create_tensor_from_blob(
+      pos_buffer,
+      {1},
+      {1},
+      aoti::libtorch_free::ScalarType::_int64);
+  std::vector<aoti::libtorch_free::SlimTensor> inputs{
+      token_tensor.to(aoti_device),
+      pos_tensor.to(aoti_device)};
 
-  torch::Tensor result = transformer->runner->run(inputs)[0]
-                             .to(torch::dtype(torch::kFloat32))
-                             .to(torch::kCPU);
+  aoti::libtorch_free::SlimTensor result = transformer->runner->run(inputs)[0]
+                             .to(aoti::libtorch_free::ScalarType::_float32)
+                             .to(aoti::libtorch_free::DeviceType::cpu);
   auto logits = result.data_ptr();
   memcpy(s->logits, logits, p->vocab_size * sizeof(float));
 #else // __ET_MODEL__
@@ -863,34 +848,12 @@ int main(int argc, char *argv[]) {
   Transformer transformer;
   build_transformer(&transformer, model_path);
 
-#ifdef __AOTI_MODEL__
   auto aoti_metadata = transformer.runner->get_metadata();
   aoti_device = aoti_metadata["AOTI_DEVICE_KEY"] == "cpu"
-                    ? torch::Device(torch::kCPU)
-                    : torch::Device(torch::kCUDA);
+                    ? aoti::libtorch_free::DeviceType::cpu
+                    : aoti::libtorch_free::DeviceType::cuda;
   ModelType model_type = get_model_type(std::stoi(aoti_metadata["tokenizer_type"]));
-#else // __ET_MODEL__
-  Error load_status = transformer.runner->load();
-  ET_CHECK_MSG(
-      load_status == torch::executor::Error::Ok,
-      "program::load() failed with status 0x%" PRIx32,
-      static_cast<uint32_t>(load_status));
 
-  static std::array<uint8_t, 4 * 1024U * 1024U> method_allocator_pool; // 4MB
-  MemoryAllocator method_allocator{MemoryAllocator(
-      sizeof(method_allocator_pool), method_allocator_pool.data())};
-  MemoryManager memory_manager(&method_allocator, nullptr);
-  auto tokenizer_method = transformer.runner->program()->load_method("tokenizer_type", &memory_manager);
-
-  Error execute_status = tokenizer_method->execute();
-  ET_CHECK_MSG(
-      execute_status == torch::executor::Error::Ok,
-      "method::execute() failed with status 0x%" PRIx32,
-      static_cast<uint32_t>(execute_status));
-
-  auto tokenizer_type = tokenizer_method->get_output(0).toInt();
-  ModelType model_type = get_model_type(tokenizer_type);
-#endif
 
   if (model_type == UNKNOWN_MODEL) {
     fprintf(stderr, "Unknown model type passed by -l argument.  Received l=%d.",
