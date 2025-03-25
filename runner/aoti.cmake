@@ -17,7 +17,7 @@ find_package(CUDA)
 
 find_package(Torch 2.4.0)
 if(Torch_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -fpermissive")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -fpermissive -O3")
 
     add_executable(aoti_run runner/run.cpp)
     target_compile_options(aoti_run PUBLIC -D__AOTI_MODEL__)
