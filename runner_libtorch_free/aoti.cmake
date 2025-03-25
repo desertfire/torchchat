@@ -22,11 +22,12 @@ add_executable(aoti_libtorch_free_run
     runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/package_loader.cpp
     runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/package_loader_utils.cpp
     runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/utils_cuda.cu
+    runner_libtorch_free/third-party/miniz-3.0.2/crc.cpp
     runner_libtorch_free/third-party/miniz-3.0.2/miniz.c
 )
 
-target_compile_options(aoti_libtorch_free_run PUBLIC -DAOTI_LIBTORCH_FREE -D__AOTI_MODEL__ -DUSE_CUDA -v)
-#target_compile_options(aoti_libtorch_free_run PUBLIC -O3 -march=native -v)
+target_compile_options(aoti_libtorch_free_run PUBLIC -DAOTI_LIBTORCH_FREE -D__AOTI_MODEL__ -DUSE_CUDA -DUSE_EXTERNAL_MZCRC)
+target_compile_options(aoti_libtorch_free_run PUBLIC -O3)
 #target_compile_options(aoti_libtorch_free_run PUBLIC -O3 -mtune=generic -march=x86-64-v2)
 target_include_directories(aoti_libtorch_free_run PRIVATE
 	  runner_libtorch_free/include
