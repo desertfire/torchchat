@@ -145,9 +145,21 @@ void read_checkpoint(char *checkpoint, Config *config) {
   config->vocab_size = abs(config->vocab_size);
 }
 
+long time_in_ms() {
+  // return time in milliseconds, for benchmarking the model speed
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time);
+  return time.tv_sec * 1000 + time.tv_nsec / 1000000;
+}
+
 void build_transformer(Transformer *t, char *model_path) {
 #ifdef __AOTI_MODEL__
-  t->runner = new torch::inductor::AOTIModelPackageLoader(model_path);
+  printf("Model loading...\n");
+  long start = time_in_ms();
+  t->runner = new torch::inductor::AOTIModelPackageLoader(model_path, "model", true);
+  long end = time_in_ms();
+  printf("Model loading time: %ld ms\n", end - start);
+
 #else //__ET_MODEL__
   t->runner = new Module(
       /* path to PTE model */ model_path,
@@ -428,13 +440,6 @@ void safe_printf(const char *piece) {
     }
   }
   printf("%s", piece);
-}
-
-long time_in_ms() {
-  // return time in milliseconds, for benchmarking the model speed
-  struct timespec time;
-  clock_gettime(CLOCK_REALTIME, &time);
-  return time.tv_sec * 1000 + time.tv_nsec / 1000000;
 }
 
 // ----------------------------------------------------------------------------
