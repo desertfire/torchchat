@@ -1,0 +1,53 @@
+
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+project(aoti_model LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+
+# May need to point CMAKE_PREFIX_PATH to the right torch location
+find_package(Torch REQUIRED)
+
+# Set a shared library target
+add_library(aoti_model SHARED)
+
+# Add macro definitions
+target_compile_definitions(aoti_model PRIVATE TORCH_INDUCTOR_CPP_WRAPPER STANDALONE_TORCH_HEADER AOTI_LIBTORCH_FREE  C10_USING_CUSTOM_GENERATED_MACROS  USE_MMAP_SELF  USE_CUDA)
+
+# Add compile flags
+target_compile_options(aoti_model PRIVATE -fPIC -O3 -DNDEBUG -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -fno-signed-zeros -fno-math-errno -fexcess-precision=fast -fno-finite-math-only -fno-unsafe-math-optimizations -ffp-contract=off -fno-tree-loop-vectorize -march=native -Wall -std=c++17 -Wno-unused-variable -Wno-unknown-pragmas -fopenmp )
+# Backend specific flags
+target_compile_options(aoti_model PRIVATE  -D_GLIBCXX_USE_CXX11_ABI=1  -c)
+
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cnyzukfltdxhtc327mswuv52zgb6xlcf5m74mgv57fovyva3p5gs.wrapper.cpp)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cr4tcammsbazzjghn4cqndluwq5xvc7brjgs5gyg7p2vjohf4xmo.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cnvkbngwgvhxwmky27tiknylrvgfd7hrupwczdxythtx2iwmxmnw.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cefosdeer5eimhrl5y2wqxsmwkolmf64lwwulmzksr4pqsg6baft.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/crhflw4opepsg6lvvv5ga3oknnb4vm4bknuud6vbqayhrl4st654.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c24pugketupm3cgf7hh4pijiyvg4estagagxw6qi7uhfcqbz3sp6.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/czsemnym6pmqx2kapz52dyhwz6y3qsqv6yz3hmvrmmnytbcyem4x.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cu6iwiujymsulhca5uo4qwnzntn3x52lori62acz6nlpqetnsayd.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c546empi4r4rqktgs5mozszzg5e3xoxmu26rq4bnk3oj2frrmm2v.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c2r6h26gm3hj3wc3o5nlvvwft4lad6ngre76kyjuw63eyciegxmd.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c3zw26b3if5ad7na6oq4uihubi45imzjonjc5xkcs4kshoa7u3lu.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cbpmmgpymme5e5deysrtvqkpqxp3ak3jsgwnvqkt6jotvzojb3ci.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cuw3h6ozeixh5mqp54nt44sgky5dfdrdgknlbhw3dz6xgbmhpdxf.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/csbtmp7akkfebxa4cwwgpf4lnssooptn46my4274afg4g2babm6g.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c676gwke3qpj2yjj3akc74xndbe6jl7idikdvuyz2phsrwvcftim.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmt5ppczxxa4q73xbsur3ao24cq4n5t4ryebe3lupu44jmcidjxq.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cqqsmtxtmfalmu5pua4v2omod4raauxko4i3rdboccvfadzf2ghp.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c3loerzgt2ftqga7igfaeulzkuuavytw2v35agpfalklisfzaogh.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/celbgvy2zwlgqwrliqbcc6xai2z6sowb56d4m2mbyhoqm6k2kjne.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cpevqxptowrcjwtnwjp2y6pwhhxuvu7n6y6wdg5cm5oqrmlqfjfa.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c2hxe4l2c2xbbly6ykpa5oq7kguqyld2l77xxoi3o2itxp7n7cki.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c6mocmn67pg5tylothqacas5pqdtsm74zvoviqugdhzc6webgcys.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c52awljwyyqhwgm5nyw4vwbfpw6xvbzcvozxp454a5xmmy4ysgib.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c7jjs5qgw52dafckch4n5xkwqlwe62q5lxoaoharlplk6wvfoiwq.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/c2d575tvqkplsnmwjpt56463tqsct66pojbc3z5snggco3yai3oh.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cymshjw44xdmodbmdst2t3ulmvfbmnrwk77q724ks2an7fkgricj.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/clcipnjoej3edprogdpq22gzne7exqytivisaric2yabqwutvrgh.cubin.o)
+target_sources(aoti_model PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cybdk2w7jmkzulymnppz6xvpxisfet6ed6tzlgpehgqfh6cspxsa.cubin.o)
+
+# Add linker flags
+target_link_options(aoti_model PRIVATE )
+
+# Add libraries
+target_link_libraries(aoti_model PRIVATE gomp openblas sleef cuda cublas)

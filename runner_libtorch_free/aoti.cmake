@@ -21,7 +21,7 @@ add_executable(aoti_libtorch_free_run
 	  runner_libtorch_free/run.cpp
     runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/package_loader.cpp
     runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/package_loader_utils.cpp
-    runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/utils_cuda.cu
+    runner_libtorch_free/include/torch/csrc/inductor/aoti_libtorch_free/cuda/utils_cuda.cu
     runner_libtorch_free/third-party/miniz-3.0.2/crc.cpp
     runner_libtorch_free/third-party/miniz-3.0.2/miniz.c
 )

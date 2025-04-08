@@ -28,9 +28,8 @@ LICENSE file in the root directory of this source tree.
 #endif
 
 #ifdef __AOTI_MODEL__
-#include <torch/csrc/inductor/aoti_libtorch_free/device_type.h>
-#include <torch/csrc/inductor/aoti_libtorch_free/package_loader.h>
-aoti::libtorch_free::DeviceType aoti_device;
+#include <torch/csrc/inductor/aoti_libtorch_free/runner.h>
+aoti::libtorch_free::Device aoti_device;
 #endif
 
 using tokenizers::SPTokenizer;
@@ -82,11 +81,11 @@ typedef struct {
   RunState state; // buffers for the "wave" of activations in the forward pass
   std::unordered_map<std::string, std::string> metadata;
 
-#ifdef __AOTI_MODEL__
-  aoti::libtorch_free::AOTILibtorchFreeLoader *runner;
-#else // __ET_MODEL__
-  Module *runner;
-#endif
+  #ifdef __AOTI_MODEL__
+    aoti::libtorch_free::SlimTensorRunner *runner;
+  #else // __ET_MODEL__
+    Module *runner;
+  #endif
 
 } Transformer;
 
@@ -131,7 +130,7 @@ void build_transformer(Transformer *t, char *model_path) {
 #ifdef __AOTI_MODEL__
   printf("Model loading...\n");
   long start = time_in_ms();
-  t->runner = new aoti::libtorch_free::AOTILibtorchFreeLoader(model_path, "model", true);
+  t->runner = new aoti::libtorch_free::SlimTensorRunner(aoti_device);
   long end = time_in_ms();
   printf("Model loading time: %ld ms\n", end - start);
 #else //__ET_MODEL__
@@ -188,7 +187,7 @@ float *forward(Transformer *transformer, int token, int pos) {
         {1, 1},
         {1, 1},
         aoti::libtorch_free::ScalarType::_int64);
-  aoti::libtorch_free::SlimTensor pos_tensor =
+  aoti::libtorch_free::SlimTensor pos_tensor = 
     aoti::libtorch_free::create_tensor_from_blob(
       pos_buffer,
       {1},
@@ -199,8 +198,8 @@ float *forward(Transformer *transformer, int token, int pos) {
       pos_tensor.to(aoti_device)};
 
   aoti::libtorch_free::SlimTensor result = transformer->runner->run(inputs)[0]
-                             .to(aoti::libtorch_free::ScalarType::_float32)
-                             .to(aoti::libtorch_free::DeviceType::cpu);
+    .to(aoti::libtorch_free::ScalarType::_float32)
+    .to(aoti::libtorch_free::CPU_DEVICE);
   auto logits = result.data_ptr();
   memcpy(s->logits, logits, p->vocab_size * sizeof(float));
 #else // __ET_MODEL__
@@ -386,14 +385,15 @@ int sample(Sampler *sampler, float *logits) {
 
 Tokenizer *build_tokenizer(const char *tokenizer_path, ModelType model_type) {
   Tokenizer *tokenizer = NULL;
+  std::string path = tokenizer_path ? std::string(tokenizer_path) : std::string();
   switch (model_type) {
   case LLAMA2_MODEL:
     tokenizer = new SPTokenizer();
-    tokenizer->load(tokenizer_path);
+    tokenizer->load(path);
     break;
   case LLAMA3_MODEL:
     tokenizer = new Tiktoken();
-    tokenizer->load(tokenizer_path);
+    tokenizer->load(path);
     break;
   default:
     fprintf(stderr, "No tokenizer defined for model type %d.\n", model_type);
@@ -763,7 +763,6 @@ void error_usage() {
 
 int main(int argc, char *argv[]) {
   // default parameters
-  char *model_path = NULL;
   char *tokenizer_path = NULL;
   float temperature =
       1.0f; // 0.0 = greedy deterministic. 1.0 = original. don't set higher
@@ -790,12 +789,7 @@ int main(int argc, char *argv[]) {
 #endif
   // poor man's C argparse so we can override the defaults above from the
   // command line
-  if (argc >= 2) {
-    model_path = argv[1];
-  } else {
-    error_usage();
-  }
-  for (int i = 2; i < argc; i += 1) {
+  for (int i = 1; i < argc; i += 1) {
     // do some basic validation
     char *parm = argv[i+1];
     // uniarg means the arg comes right after the letter in accordance with posix
@@ -844,29 +838,16 @@ int main(int argc, char *argv[]) {
     i += (uniarg)?0:1;
   }
 
-  if (model_path == NULL) {
-    fprintf(stderr, "No model_path provided.");
-    error_usage();
-  }
-
   Transformer transformer;
-  build_transformer(&transformer, model_path);
+  build_transformer(&transformer, nullptr);
 
-  auto aoti_metadata = transformer.runner->get_metadata();
-  aoti_device = aoti_metadata["AOTI_DEVICE_KEY"] == "cpu"
-                    ? aoti::libtorch_free::DeviceType::cpu
-                    : aoti::libtorch_free::DeviceType::cuda;
-  ModelType model_type = get_model_type(std::stoi(aoti_metadata["tokenizer_type"]));
-
+  // Hardcode to CUDA
+  aoti_device = aoti::libtorch_free::Device{aoti::libtorch_free::DeviceType::cuda, 0};
+  ModelType model_type = get_model_type(3); // LLAMA 3
 
   if (model_type == UNKNOWN_MODEL) {
     fprintf(stderr, "Unknown model type passed by -l argument.  Received l=%d.",
             llama_ver);
-    error_usage();
-  }
-
-  if (tokenizer_path == NULL) {
-    fprintf(stderr, "No tokenizer_path provided.");
     error_usage();
   }
 
