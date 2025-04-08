@@ -26,12 +26,6 @@ if(TARGET aoti_run)
     target_include_directories(aoti_run PUBLIC runner/third-party/tokenizers/include)
 endif()
 
-include(runner_libtorch_free/aoti.cmake)
-if(TARGET aoti_libtorch_free_run)
-    target_link_libraries(aoti_libtorch_free_run tokenizers)
-    target_include_directories(aoti_libtorch_free_run PUBLIC runner/third-party/tokenizers/include)
-endif()
-
 include(runner_libtorch_free_single_binary/aoti.cmake)
 if(TARGET aoti_libtorch_free_single_binary_run)
     target_link_libraries(aoti_libtorch_free_single_binary_run tokenizers)
