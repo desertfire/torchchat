@@ -38,9 +38,9 @@ while (( "$#" )); do
       TARGET="aoti"
       shift
       ;;
-    aoti_libtorch_free)
-      echo "Building aoti libtorch-free native runner..."
-      TARGET="aoti_libtorch_free"
+    aoti_libtorch_free_quantized)
+      echo "Building aoti libtorch-free quantized native runner..."
+      TARGET="aoti_libtorch_free_quantized"
       shift
       ;;
     aoti_libtorch_free_single_binary)

@@ -19,7 +19,7 @@ ENDIF()
 
 add_executable(aoti_libtorch_free_single_binary_run
     runner_libtorch_free_single_binary/run.cpp
-    runner_libtorch_free_single_binary/include/torch/csrc/inductor/aoti_libtorch_free/cuda/utils_cuda.cu
+    runner_libtorch_free_single_binary/include/torch/csrc/inductor/aoti_neutron/cuda/utils_cuda.cu
 )
 
 target_sources(aoti_libtorch_free_single_binary_run PRIVATE runner_libtorch_free_single_binary/cnyzukfltdxhtc327mswuv52zgb6xlcf5m74mgv57fovyva3p5gs.wrapper.cpp)
@@ -59,7 +59,7 @@ target_compile_options(aoti_libtorch_free_single_binary_run PRIVATE  -D_GLIBCXX_
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/serialized_weights.bin
-    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/runner_libtorch_free_single_binary/serialized_weights.bin ${CMAKE_CURRENT_BINARY_DIR}/serialized_weights.bin 
+    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/runner_libtorch_free_single_binary/serialized_weights.bin ${CMAKE_CURRENT_BINARY_DIR}/serialized_weights.bin
 )
 
 add_custom_target(serialized_weights

@@ -1,12 +1,12 @@
 
 #include <torch/csrc/inductor/aoti_include/cuda.h>
-#include <torch/csrc/inductor/aoti_libtorch_free/cuda/c_shim_cuda.h>
+#include <torch/csrc/inductor/aoti_neutron/cuda/c_shim_cuda.h>
 // Definition of AOTI runtime interface functions
 
 #include <torch/csrc/inductor/aoti_runtime/interface.h>
 #include <torch/csrc/inductor/aoti_runtime/model_container.h>
 #ifdef AOTI_LIBTORCH_FREE
-#include <torch/csrc/inductor/aoti_libtorch_free/slim_tensor.h>
+#include <torch/csrc/inductor/aoti_neutron/slim_tensor.h>
 #endif
 
 #include <iostream>
@@ -176,22 +176,22 @@ AOTIRuntimeError AOTInductorModelContainerFlattenedRunSingleThreaded(
       int64_t // storage_offset
       >;
 
-  std::vector<aoti::libtorch_free::SlimTensor*> inputs;
+  std::vector<torch::neutron::SlimTensor*> inputs;
   inputs.reserve(num_inputs);
   for (size_t i = 0; i < num_inputs; i++) {
     FlattenedTensor* tuple = reinterpret_cast<FlattenedTensor*>(input_handles[i]);
     IntArrayRef sizes(std::get<1>(*tuple), std::get<3>(*tuple));
     IntArrayRef strides(std::get<2>(*tuple), std::get<3>(*tuple));
-    inputs.push_back(new aoti::libtorch_free::SlimTensor(
-      aoti::libtorch_free::create_tensor_from_blob(
+    inputs.push_back(new torch::neutron::SlimTensor(
+      torch::neutron::create_tensor_from_blob(
         std::get<0>(*tuple),
         sizes,
         strides,
         // dtype is 1-to-1 mapping for now
-        static_cast<aoti::libtorch_free::ScalarType>(std::get<4>(*tuple)),
+        static_cast<torch::neutron::ScalarType>(std::get<4>(*tuple)),
         // device_type is 1-to-1 mapping for now
-        {static_cast<aoti::libtorch_free::DeviceType>(std::get<5>(*tuple)),
-        static_cast<aoti::libtorch_free::DeviceIndex>(std::get<6>(*tuple))},
+        {static_cast<torch::neutron::DeviceType>(std::get<5>(*tuple)),
+        static_cast<torch::neutron::DeviceIndex>(std::get<6>(*tuple))},
         std::get<7>(*tuple))));
     delete tuple;
   }
@@ -201,14 +201,14 @@ AOTIRuntimeError AOTInductorModelContainerFlattenedRunSingleThreaded(
 
   CONVERT_EXCEPTION_TO_ERROR_CODE({
     AOTINoGradGuard guard;
-    std::vector<aoti::libtorch_free::SlimTensor*> outputs(num_outputs);
+    std::vector<torch::neutron::SlimTensor*> outputs(num_outputs);
 
     container->run_single_threaded(
         inputs.data(), outputs.data(), stream, proxy_executor_handle);
 
-    std::vector<aoti::libtorch_free::SlimTensor*> inputs;
+    std::vector<torch::neutron::SlimTensor*> inputs;
     for (size_t i = 0; i < num_outputs; i++) {
-      aoti::libtorch_free::SlimTensor* tensor = outputs[i];
+      torch::neutron::SlimTensor* tensor = outputs[i];
       FlattenedTensor *tuple = new FlattenedTensor(
         tensor->data_ptr(),
         tensor->sizes().data(),
@@ -506,9 +506,9 @@ AOTIRuntimeError AOTInductorModelUpdateConstantsMap(
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <torch/csrc/inductor/aoti_libtorch_free/cuda/c_shim_cuda.h>
+#include <torch/csrc/inductor/aoti_neutron/cuda/c_shim_cuda.h>
 
-namespace aoti::libtorch_free {
+namespace torch::neutron {
 namespace {
 
 void sgemm_cublas(
@@ -578,7 +578,7 @@ void sgemm_cublas(
 }
 
 } // namespace
-} // namespace aoti::libtorch_free
+} // namespace torch::neutron
 
 /*
 AOTITorchError aoti_torch_cuda_mm_out(
@@ -586,9 +586,9 @@ AOTITorchError aoti_torch_cuda_mm_out(
     AtenTensorHandle self,
     AtenTensorHandle mat2) {
   if (self->dim() == 2 && mat2->dim() == 2 &&
-      self->dtype() == aoti::libtorch_free::ScalarType::_float32 &&
-      mat2->dtype() == aoti::libtorch_free::ScalarType::_float32) {
-    aoti::libtorch_free::sgemm_cublas(*out, *self, *mat2, *out, 0.0f, 1.0f);
+      self->dtype() == torch::neutron::ScalarType::_float32 &&
+      mat2->dtype() == torch::neutron::ScalarType::_float32) {
+    torch::neutron::sgemm_cublas(*out, *self, *mat2, *out, 0.0f, 1.0f);
   } else {
     throw std::runtime_error("matmul only supports float32 tensors");
   }
@@ -603,11 +603,11 @@ AOTITorchError aoti_torch_cuda_addmm_out(
     AtenTensorHandle mat2,
     double beta,
     double alpha) {
-  if (out->dtype() == aoti::libtorch_free::ScalarType::_float32 &&
-      self->dtype() == aoti::libtorch_free::ScalarType::_float32 &&
-      mat1->dtype() == aoti::libtorch_free::ScalarType::_float32 &&
-      mat2->dtype() == aoti::libtorch_free::ScalarType::_float32) {
-    aoti::libtorch_free::sgemm_cublas(*out, *mat1, *mat2, *self, beta, alpha);
+  if (out->dtype() == torch::neutron::ScalarType::_float32 &&
+      self->dtype() == torch::neutron::ScalarType::_float32 &&
+      mat1->dtype() == torch::neutron::ScalarType::_float32 &&
+      mat2->dtype() == torch::neutron::ScalarType::_float32) {
+    torch::neutron::sgemm_cublas(*out, *mat1, *mat2, *self, beta, alpha);
   } else {
     throw std::runtime_error("matmul only supports float32 tensors");
   }
@@ -4356,7 +4356,7 @@ std::unordered_map<std::string, AtenTensorHandle> AOTInductorModel::const_run_im
 } // namespace torch::aot_inductor
 
 using namespace torch::aot_inductor;
-using namespace aoti::libtorch_free;
+using namespace torch::neutron;
 
 template <typename in_ptr0_type_, typename in_ptr1_type_, typename out_ptr0_type_, typename kernels_type_>
 static inline void call_triton_red_fused__to_copy_embedding_mean_pow_0(

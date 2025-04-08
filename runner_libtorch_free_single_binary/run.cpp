@@ -28,8 +28,8 @@ LICENSE file in the root directory of this source tree.
 #endif
 
 #ifdef __AOTI_MODEL__
-#include <torch/csrc/inductor/aoti_libtorch_free/runner.h>
-aoti::libtorch_free::Device aoti_device;
+#include <torch/csrc/inductor/aoti_neutron/runner.h>
+torch::neutron::Device aoti_device;
 #endif
 
 using tokenizers::SPTokenizer;
@@ -82,7 +82,7 @@ typedef struct {
   std::unordered_map<std::string, std::string> metadata;
 
   #ifdef __AOTI_MODEL__
-    aoti::libtorch_free::SlimTensorRunner *runner;
+    torch::neutron::SlimTensorRunner *runner;
   #else // __ET_MODEL__
     Module *runner;
   #endif
@@ -130,7 +130,7 @@ void build_transformer(Transformer *t, char *model_path) {
 #ifdef __AOTI_MODEL__
   printf("Model loading...\n");
   long start = time_in_ms();
-  t->runner = new aoti::libtorch_free::SlimTensorRunner(aoti_device);
+  t->runner = new torch::neutron::SlimTensorRunner(aoti_device);
   long end = time_in_ms();
   printf("Model loading time: %ld ms\n", end - start);
 #else //__ET_MODEL__
@@ -181,25 +181,25 @@ float *forward(Transformer *transformer, int token, int pos) {
 #endif
 
 #ifdef __AOTI_MODEL__
-  aoti::libtorch_free::SlimTensor token_tensor =
-      aoti::libtorch_free::create_tensor_from_blob(
+  torch::neutron::SlimTensor token_tensor =
+      torch::neutron::create_tensor_from_blob(
         token_buffer,
         {1, 1},
         {1, 1},
-        aoti::libtorch_free::ScalarType::_int64);
-  aoti::libtorch_free::SlimTensor pos_tensor = 
-    aoti::libtorch_free::create_tensor_from_blob(
+        torch::neutron::ScalarType::_int64);
+  torch::neutron::SlimTensor pos_tensor = 
+    torch::neutron::create_tensor_from_blob(
       pos_buffer,
       {1},
       {1},
-      aoti::libtorch_free::ScalarType::_int64);
-  std::vector<aoti::libtorch_free::SlimTensor> inputs{
+      torch::neutron::ScalarType::_int64);
+  std::vector<torch::neutron::SlimTensor> inputs{
       token_tensor.to(aoti_device),
       pos_tensor.to(aoti_device)};
 
-  aoti::libtorch_free::SlimTensor result = transformer->runner->run(inputs)[0]
-    .to(aoti::libtorch_free::ScalarType::_float32)
-    .to(aoti::libtorch_free::CPU_DEVICE);
+  torch::neutron::SlimTensor result = transformer->runner->run(inputs)[0]
+    .to(torch::neutron::ScalarType::_float32)
+    .to(torch::neutron::CPU_DEVICE);
   auto logits = result.data_ptr();
   memcpy(s->logits, logits, p->vocab_size * sizeof(float));
 #else // __ET_MODEL__
@@ -842,7 +842,7 @@ int main(int argc, char *argv[]) {
   build_transformer(&transformer, nullptr);
 
   // Hardcode to CUDA
-  aoti_device = aoti::libtorch_free::Device{aoti::libtorch_free::DeviceType::cuda, 0};
+  aoti_device = torch::neutron::Device{torch::neutron::DeviceType::cuda, 0};
   ModelType model_type = get_model_type(3); // LLAMA 3
 
   if (model_type == UNKNOWN_MODEL) {
